@@ -1,0 +1,137 @@
+---
+title: "kmean_lab2"
+author: "Abhishek Kumar"
+date: "2/23/2021"
+output: html_document
+---
+
+__Required packages and libraries__
+
+```{r}
+
+library(e1071) # for ClassAgreement
+library(mclust) # for adjustedRandIndex
+
+```
+
+
+
+# Clustering K-means
+
+In this analysis I will be looking the "Old failthful data". This is an inbuil R data set called faithful.
+It is a dataframe ehich contains two variable and 272 observations.
+
+```{r load_data}
+
+data(faithful)
+?faithful
+head(faithful, 5)
+summary(faithful)
+faith = faithful
+
+# Standardizing the faithful data.
+
+std = apply(faith, 2, sd)
+faith = sweep(faith, 2, std, '/') # dividing each obsservation of the faithful data with it column standdard deviation.
+
+summary(faith)
+
+```
+
+> Variance of two variable are on quite a different scale, so scaling the data before analysis will be better for this data.
+
+__Performing Hierarchical clustering to visualize the clustering structure of the faithful data.__
+
+```{r dissmimilarity_matrix}
+ 
+dis = dist(faith, method = "euclidean")
+
+method = c("single", "complete", "average")
+
+for(m in method){
+  
+  cl = hclust(dis, method = m) # Using complete linkage to do lustering for the faithful data.
+  plot(cl, main = m)
+  
+}
+
+```
+
+
+```{r hcl}
+
+hcl_avg = hclust(dis, method = 'average')
+hcl_avg
+
+```
+
+
+> looking at the results from the above hirerarchical clustering structires I can say that there are possibly two major groups present in data.
+
+
+__K-means clustering__
+
+> With some initial understanding about the grouping structures in the faithful data, I can now run kmeans to further check the compactness of the clusters in the dataset
+
+> I will run k-mean clustering algorithm over a range of k values to figure out the best clustering solution for this dataset. I will record the within cluster sum of squares for each value of the k (1 to 10).
+
+```{r}
+
+WGSS = rep(0,10) # setting a vector to record WSS for clustering solution corresponding to each k.
+BSS = rep(0,10)  # setting a vector to record BSS for clustering solution corresponding to each k. 
+for(k in 1:10){
+  
+  fit = kmeans(faith, centers = k, nstart = 30)
+  WGSS[k] = fit$tot.withinss
+  BSS[k] = fit$betweenss
+  
+}
+
+par(mfrow = c(1,2))
+plot(1:10, WGSS, type = "b", xlab = 'K values', ylab = "Within Sum of Squares")
+plot(1:10, BSS, type = "b", xlab = 'K values', ylab = "Between Sum of Squares")
+par(mfrow = c(1,1))
+```
+> From the above plots I can see that the bends on both the plots are observed at k = 2, suggesting that clustering solution with 2 clusters minimize the within cluster distance and maximize the between cluster distance, i.e making the observations within a cluster more compact(similar to each other), and observations between different clusters more dissimilar.
+
+> Similar results before from hierarchical clustering solutions suggests same.
+
+```{r kmeans_2_cluster_model}
+K = 2
+cl = kmeans(faith, centers =K, nstart = 30)
+table(cl$cluster)
+
+```
+
+> Results suggests that there are 174 observations in cluster 1 and 98 observations in cluster 2.
+
+
+```{r plot}
+plot(faith, col = adjustcolor(cl$cluster)) # plotting and colouring as per the cluster membership
+points(cl$centers, col = 1:K, pch = 8) # plotting cluster centers for each gropus in the faithful data.
+
+```
+
+> Since it is only a two dimensional data, I can also observe the clustering structure of the observations using simple scatter plot as seen from above.
+>Icolured each observation accoring to cluster membership obatined form fitting a kmean clustering algorithm with K = 2 earlier.
+
+__External validation of clustering solution using rand index and adjusted rand index__
+
+
+> I have already constructed a dendogram for the old faithful data earlier.
+> If I cut the dendogram such that it produces a two cluster solution, then I would have hierarchical clustering solution and a partitioning solution for the faithful data.
+> Then I can compare the agreement between the two clustering solutions using the external validation measures like rand and adjusted rand indexs.
+
+```{r Ext_val}
+
+# cutting the dendogram using
+hcl = cutree(hcl_avg, 2) # produces a hierarchiclal clustering solution with 2 clusters.
+kcl = kmeans(faith, centers = 2, nstart = 30)
+tab = table(hcl, kcl$cluster)
+tab
+
+classAgreement(tab)$crand
+adjustedRandIndex(hcl, kcl$cluster)
+```
+
+> From the above results I can see that kmeans and hierarchical clustering solutions with k = 2 has high level agreements as suggested by the adjusted rand index of 0.98.
