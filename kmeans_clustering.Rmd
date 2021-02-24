@@ -1,9 +1,14 @@
 ---
-title: "kmean_lab2"
+title: "kmean_lab3"
 author: "Abhishek Kumar"
 date: "2/23/2021"
 output: html_document
 ---
+
+
+```{r}
+setwd('G:\\My Drive\\spring_semester\\multivariate_analysis\\labs\\lab3')
+```
 
 __Required packages and libraries__
 
@@ -24,7 +29,7 @@ It is a dataframe ehich contains two variable and 272 observations.
 ```{r load_data}
 
 data(faithful)
-?faithful
+#?faithful
 head(faithful, 5)
 summary(faithful)
 faith = faithful
